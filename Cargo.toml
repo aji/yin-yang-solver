@@ -1,0 +1,14 @@
+[package]
+name = "yin-yang-solver"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+clap = { version = "4.6.0", features = ["derive"] }
+env_logger = { version = "0.11.10" }
+image = { version = "0.25.10", default-features = false, features = ["png"] }
+log = { version = "0.4.29" }
+puzzle-grid = { git = "https://github.com/aji/puzzle-grid.git" }
+pzpr-codec = { git = "https://github.com/aji/pzpr-codec.git" }
+rand = "0.10.0"
+yin-yang-extractor = { git = "https://github.com/aji/yin-yang-extractor.git" }
