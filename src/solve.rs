@@ -2,32 +2,34 @@ use crate::{
     Grid, apply_2x2, apply_border, apply_connectivity, apply_pbc,
     dump::DumpGrid,
     rules::{self, RuleCheck},
+    solve_path::SolvePath,
 };
 
-fn apply_solve(grid: &mut Grid) -> bool {
-    if apply_2x2::apply(grid) {
+fn apply_solve(grid: &mut Grid, mut path: Option<&mut SolvePath>) -> bool {
+    if apply_2x2::apply(grid, path.as_deref_mut()) {
         log::debug!("applied 2x2 logic");
         return true;
     }
-    if apply_border::apply(grid) {
+    if apply_border::apply(grid, path.as_deref_mut()) {
         log::debug!("applied border logic");
         return true;
     }
-    if apply_connectivity::apply(grid) {
+    if apply_connectivity::apply(grid, path.as_deref_mut()) {
         log::debug!("applied connectivity logic");
         return true;
     }
-    if apply_pbc::apply(grid, 2) {
+    if apply_pbc::apply(grid, path.as_deref_mut(), 2) {
         return true;
     }
     false
 }
 
-pub fn solve(mut grid: Grid) -> SolveResult {
+pub fn solve(mut grid: Grid, mut path: Option<&mut SolvePath>) -> SolveResult {
     loop {
         log::debug!("solver progress:\n{}", DumpGrid("", &grid));
+        let path_rb = path.as_deref_mut();
         match rules::check(&grid) {
-            RuleCheck::Unsolved => match apply_solve(&mut grid) {
+            RuleCheck::Unsolved => match apply_solve(&mut grid, path_rb) {
                 true => continue,
                 false => return SolveResult::Partial(grid),
             },

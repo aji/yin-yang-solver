@@ -15,5 +15,7 @@ pub(crate) mod ext;
 pub(crate) mod iter;
 pub(crate) mod rules;
 pub(crate) mod solve;
+pub(crate) mod solve_path;
 
 pub use solve::{SolveResult, solve};
+pub use solve_path::{SolvePath, SolveStep, fmt_path};

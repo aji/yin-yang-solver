@@ -1,6 +1,7 @@
 use crate::{
     Cell, Grid,
     ext::{ArrayExt, CellExt},
+    solve_path::{SolvePath, SolveStep},
 };
 use puzzle_grid::array::ArrayVec;
 
@@ -102,14 +103,19 @@ impl<'g> Connectivity<'g> {
     }
 }
 
-fn apply_connectivity_for(grid: &mut Grid, color: Cell) -> bool {
+fn apply_connectivity_for(grid: &mut Grid, path: Option<&mut SolvePath>, color: Cell) -> bool {
     let mut conn = Connectivity::new(grid, color);
     conn.dfs_all();
+    if conn.made_progress
+        && let Some(path) = path
+    {
+        path.push(SolveStep::ApplyConnectivity);
+    }
     conn.made_progress
 }
 
-pub fn apply(grid: &mut Grid) -> bool {
-    let did_black = apply_connectivity_for(grid, Cell::Black);
-    let did_white = apply_connectivity_for(grid, Cell::White);
+pub fn apply(grid: &mut Grid, mut path: Option<&mut SolvePath>) -> bool {
+    let did_black = apply_connectivity_for(grid, path.as_deref_mut(), Cell::Black);
+    let did_white = apply_connectivity_for(grid, path.as_deref_mut(), Cell::White);
     did_black || did_white
 }

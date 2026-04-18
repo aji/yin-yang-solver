@@ -1,6 +1,11 @@
-use crate::{Cell, Grid, ext::CellExt, iter::IterBorderMut};
+use crate::{
+    Cell, Grid,
+    ext::CellExt,
+    iter::IterBorderMut,
+    solve_path::{SolvePath, SolveStep},
+};
 
-pub fn apply(grid: &mut Grid) -> bool {
+pub fn apply(grid: &mut Grid, path: Option<&mut SolvePath>) -> bool {
     let mut made_progress = false;
     let mut border = {
         let mut border: Vec<Cell> = Vec::new();
@@ -58,6 +63,9 @@ pub fn apply(grid: &mut Grid) -> bool {
         while let Some(cell) = it.next(grid) {
             *cell = border[i];
             i += 1;
+        }
+        if let Some(path) = path {
+            path.push(SolveStep::ApplyBorder);
         }
     }
 

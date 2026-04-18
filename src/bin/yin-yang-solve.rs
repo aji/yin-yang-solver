@@ -9,15 +9,20 @@ struct Cli {
     puzzle: String,
 
     #[arg(short = 'f', long)]
-    output_format: Option<PuzzleFormat>,
+    output_format: Option<OutputFormat>,
 
     #[arg(short, long)]
     output: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, ValueEnum)]
-enum PuzzleFormat {
+enum InputFormat {
     Image,
+    Url,
+}
+
+#[derive(Copy, Clone, Debug, ValueEnum)]
+enum OutputFormat {
     Ascii,
     Colors,
     Url,
@@ -27,12 +32,12 @@ const DEFAULT_PUZZLE_SITE: &'static str = "https://puzz.link/p";
 const KNOWN_PUZZLE_SITES: &'static [&'static str] =
     &["//puzz.link/p", "//pzprxs.vercel.app/p", "//pzv.jp/p.html"];
 
-impl PuzzleFormat {
+impl InputFormat {
     fn guess(arg: &str) -> Option<Self> {
         if arg.starts_with("https://") {
-            Some(PuzzleFormat::Url)
+            Some(Self::Url)
         } else if arg.ends_with(".png") {
-            Some(PuzzleFormat::Image)
+            Some(Self::Image)
         } else {
             None
         }
@@ -40,29 +45,22 @@ impl PuzzleFormat {
 
     fn load(&self, arg: &str) -> Result<Grid, String> {
         match self {
-            PuzzleFormat::Image => yin_yang_extractor::extract_from_image_file(arg)
+            Self::Image => yin_yang_extractor::extract_from_image_file(arg)
                 .map_err(|e| format!("failed to load image: {e}")),
-            PuzzleFormat::Ascii => Err("ascii format cannot be used for load".into()),
-            PuzzleFormat::Colors => Err("colors format cannot be used for load".into()),
-            PuzzleFormat::Url => get_puzzle_from_url(arg),
+            Self::Url => get_puzzle_from_url(arg),
         }
     }
+}
 
+impl OutputFormat {
     fn save(&self, arg: Option<&str>, grid: GridView) -> Result<(), String> {
+        let None = arg else {
+            return Err("output to file not implemented yet".into());
+        };
         match self {
-            PuzzleFormat::Image => Err("image format cannot be used for save".into()),
-            PuzzleFormat::Ascii => match arg {
-                Some(_) => Err("ascii output to file not implemented yet".into()),
-                None => Ok(print!("{}", FormatAscii(grid))),
-            },
-            PuzzleFormat::Colors => match arg {
-                Some(_) => Err("colors output to file not implemented yet".into()),
-                None => Ok(print!("{}", FormatColors(grid))),
-            },
-            PuzzleFormat::Url => match arg {
-                Some(_) => Err("url output to file not implemented yet".into()),
-                None => Ok(println!("{DEFAULT_PUZZLE_SITE}?{}", FormatUrl(grid))),
-            },
+            Self::Ascii => Ok(print!("{}", FormatAscii(grid))),
+            Self::Colors => Ok(print!("{}", FormatColors(grid))),
+            Self::Url => Ok(println!("{}", FormatUrl(grid))),
         }
     }
 }
@@ -125,8 +123,8 @@ struct FormatUrl<'g>(GridView<'g>);
 
 impl<'g> fmt::Display for FormatUrl<'g> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let url = pzpr_codec::yinyang::encode(&self.0).unwrap();
-        write!(f, "{url}")
+        let url_query = pzpr_codec::yinyang::encode(&self.0).unwrap();
+        write!(f, "{DEFAULT_PUZZLE_SITE}?{url_query}")
     }
 }
 
@@ -136,13 +134,14 @@ pub fn main() {
     env_logger::init();
 
     log::debug!("loading puzzle");
-    let input = PuzzleFormat::guess(&cli.puzzle)
+    let input = InputFormat::guess(&cli.puzzle)
         .expect("could not determine input puzzle format")
         .load(&cli.puzzle)
         .expect("could not load input puzzle");
 
     log::debug!("solving puzzle");
-    let output = match yin_yang_solver::solve(input.clone()) {
+    let mut path = Vec::new();
+    let output = match yin_yang_solver::solve(input.clone(), Some(&mut path)) {
         SolveResult::NoSolutions => {
             log::error!("puzzle has no solutions");
             std::process::exit(1);
@@ -153,10 +152,14 @@ pub fn main() {
         }
         SolveResult::Solved(grid) => grid,
     };
+    let mut path_fmt: Vec<u8> = Vec::new();
+    yin_yang_solver::fmt_path(&mut path_fmt, &path[..]).expect("failed to format solve path");
+    let path_fmt_str = str::from_utf8(&path_fmt).expect("path is not valid utf8");
+    print!("{path_fmt_str}");
 
     log::debug!("saving solved puzzle");
     cli.output_format
-        .unwrap_or(PuzzleFormat::Ascii)
+        .unwrap_or(OutputFormat::Ascii)
         .save(cli.output.as_ref().map(String::as_str), output.as_ref())
         .expect("could not save output");
 }
