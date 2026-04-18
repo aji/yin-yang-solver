@@ -24,6 +24,9 @@ fn apply_pbc_deductions(grid: &mut Grid, mut path: Option<&mut SolvePath>, depth
         if !apply_pbc_deductions_once(grid, path.as_deref_mut()) {
             break;
         }
+        if rules::check(&grid) == RuleCheck::Contradiction {
+            break;
+        }
     }
 }
 

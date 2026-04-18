@@ -117,8 +117,91 @@ fn apply_connectivity_for(grid: &mut Grid, path: Option<&mut SolvePath>, color: 
     made_progress
 }
 
+struct Isolation<'g> {
+    grid: &'g mut Grid,
+    changed: Vec<(usize, usize, Cell)>,
+    visited: ArrayVec<bool>,
+    reaches: ArrayVec<u8>,
+    roots: ArrayVec<(usize, usize)>,
+}
+
+impl<'g> Isolation<'g> {
+    fn new(grid: &'g mut Grid) -> Isolation<'g> {
+        let visited = grid.dup_default();
+        let reaches = grid.dup_default();
+        let roots = grid.dup_default();
+        Isolation {
+            grid,
+            changed: Vec::new(),
+            visited,
+            reaches,
+            roots,
+        }
+    }
+
+    fn dfs(&mut self, x0: (usize, usize), root: (usize, usize)) {
+        self.visited[x0] = true;
+        self.roots[x0] = root;
+        for x1 in self.grid.iter_adj(x0) {
+            match self.grid[x1] {
+                Cell::Empty => {
+                    if !self.visited[x1] {
+                        self.dfs(x1, root);
+                    }
+                }
+                Cell::Black => self.reaches[root] |= 0x01,
+                Cell::White => self.reaches[root] |= 0x02,
+            }
+        }
+    }
+
+    fn dfs_all(&mut self) {
+        for r in 0..self.grid.rows() {
+            for c in 0..self.grid.cols() {
+                let x = (r, c);
+                if !self.visited[x] && self.grid[x] == Cell::Empty {
+                    self.dfs(x, x);
+                    self.apply(x);
+                }
+            }
+        }
+    }
+
+    fn apply(&mut self, root: (usize, usize)) {
+        let color = match self.reaches[root] {
+            0x01 => Cell::Black,
+            0x02 => Cell::White,
+            _ => return,
+        };
+        for r in 0..self.grid.rows() {
+            for c in 0..self.grid.cols() {
+                let x = (r, c);
+                if self.grid[x] == Cell::Empty && self.roots[x] == root {
+                    self.grid[x] = color;
+                    self.changed.push((r, c, color));
+                }
+            }
+        }
+    }
+}
+
+fn apply_isolation(grid: &mut Grid, path: Option<&mut SolvePath>) -> bool {
+    let mut iso = Isolation::new(grid);
+    iso.dfs_all();
+
+    let changed = iso.changed;
+    let made_progress = changed.len() > 0;
+    if let Some(path) = path {
+        if made_progress {
+            path.push(SolveStep::ApplyConnectivity(changed));
+        }
+    }
+    made_progress
+}
+
 pub fn apply(grid: &mut Grid, mut path: Option<&mut SolvePath>) -> bool {
     let did_black = apply_connectivity_for(grid, path.as_deref_mut(), Cell::Black);
     let did_white = apply_connectivity_for(grid, path.as_deref_mut(), Cell::White);
-    did_black || did_white
+    let did_empty = apply_isolation(grid, path.as_deref_mut());
+    did_black || did_white || did_empty
 }
