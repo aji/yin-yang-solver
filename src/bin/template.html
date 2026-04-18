@@ -103,8 +103,9 @@
       puz.setAttribute('viewBox', `-0.5 -0.5 ${cols+0.5} ${rows+1.5}`);
     }
     let current = null;
-    function renderStep(e) {
+    function renderStep(e, ev) {
       if (!(e instanceof HTMLElement) || !e.hasAttribute('data-puz')) return;
+      ev?.preventDefault();
       let d = e.previousElementSibling ?? null;
       if (d === null) {
         for (let cur = e.parentElement; cur != null; cur = cur.parentElement) {
@@ -120,12 +121,14 @@
       }
       current = e;
       current.setAttribute('data-cur', 'yes');
+      current.scrollIntoView({ block: 'nearest' });
       renderGrid(d?.getAttribute?.('data-puz'), e.getAttribute('data-puz'));
     }
     const path = document.getElementById('path');
-    renderStep(path.firstElementChild);
+    renderStep(path.firstElementChild, null);
     path.addEventListener('click', (e) => {
       e.stopPropagation();
+      e.preventDefault();
       renderStep(e.target);
     });
     document.addEventListener('keydown', (e) => {
@@ -136,10 +139,10 @@
       let up = current.parentElement?.parentElement ?? null;
       if (!down?.hasAttribute('data-puz')) down = null;
       if (!up?.hasAttribute('data-puz')) up = null;
-      if (e.key === 'ArrowDown' && next !== null) renderStep(next);
-      if (e.key === 'ArrowUp' && prev !== null) renderStep(prev);
-      if (e.key === 'ArrowRight' && down !== null) renderStep(down);
-      if (e.key === 'ArrowLeft' && up !== null) renderStep(up);
+      if (e.key === 'ArrowDown' && next !== null) renderStep(next, e);
+      if (e.key === 'ArrowUp' && prev !== null) renderStep(prev, e);
+      if (e.key === 'ArrowRight' && down !== null) renderStep(down, e);
+      if (e.key === 'ArrowLeft' && up !== null) renderStep(up, e);
     });
   </script>
 </body>

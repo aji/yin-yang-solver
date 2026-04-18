@@ -38,32 +38,20 @@ pub fn apply(grid: &mut Grid, path: Option<&mut SolvePath>, depth: usize) -> boo
             continue;
         }
 
-        let mut hyppath = Vec::new();
-        let mut hyp = grid.clone();
-        hyp[x] = Cell::Black;
-        apply_pbc_deductions(&mut hyp, Some(&mut hyppath), depth);
-        if rules::check(&hyp) == RuleCheck::Contradiction {
-            log::debug!("pbc found contradiction in\n{}", DumpGrid("?....", &hyp));
-            log::debug!("by pbc cell at {x:?} is white",);
-            if let Some(path) = path {
-                path.push(SolveStep::ApplyPbc(r, c, Cell::White, hyppath));
+        for color in [Cell::Black, Cell::White] {
+            let mut hyppath = Vec::new();
+            let mut hyp = grid.clone();
+            hyp[x] = color.inv();
+            apply_pbc_deductions(&mut hyp, Some(&mut hyppath), depth);
+            if rules::check(&hyp) == RuleCheck::Contradiction {
+                log::debug!("pbc found contradiction in\n{}", DumpGrid("?....", &hyp));
+                log::debug!("by pbc cell at {x:?} is {color:?}",);
+                if let Some(path) = path {
+                    path.push(SolveStep::ApplyPbc(r, c, color, hyppath));
+                }
+                grid[i] = color;
+                return true;
             }
-            grid[i] = Cell::White;
-            return true;
-        }
-
-        let mut hyppath = Vec::new();
-        let mut hyp = grid.clone();
-        hyp[x] = Cell::White;
-        apply_pbc_deductions(&mut hyp, Some(&mut hyppath), depth);
-        if rules::check(&hyp) == RuleCheck::Contradiction {
-            log::debug!("pbc found contradiction in {}", DumpGrid("?....", &hyp));
-            log::debug!("by pbc cell at {x:?} is black",);
-            if let Some(path) = path {
-                path.push(SolveStep::ApplyPbc(r, c, Cell::Black, hyppath));
-            }
-            grid[x] = Cell::Black;
-            return true;
         }
     }
     false
