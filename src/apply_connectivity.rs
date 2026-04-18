@@ -8,7 +8,7 @@ use puzzle_grid::array::ArrayVec;
 struct Connectivity<'g> {
     grid: &'g mut Grid,
     color: Cell,
-    made_progress: bool,
+    changed: Vec<(usize, usize, Cell)>,
     visited: ArrayVec<bool>,
     tin: ArrayVec<isize>,
     tin_next: isize,
@@ -25,7 +25,7 @@ impl<'g> Connectivity<'g> {
         Connectivity {
             grid,
             color,
-            made_progress: false,
+            changed: Vec::new(),
             visited,
             tin,
             tin_next: 1,
@@ -39,7 +39,7 @@ impl<'g> Connectivity<'g> {
         self.tin_next += 1;
         self.visited[x0] = true;
         self.has[x0] = self.grid[x0] == self.color;
-        for x1 in self.grid.adj(x0) {
+        for x1 in self.grid.iter_adj(x0) {
             if self.grid[x1] == self.color.inv() {
                 // not traversable in dfs
                 continue;
@@ -57,7 +57,7 @@ impl<'g> Connectivity<'g> {
                 if self.low[x1] >= self.tin[x0] && up.is_some() && self.has[x1] {
                     if self.grid[x0] != self.color {
                         self.grid[x0] = self.color;
-                        self.made_progress = true;
+                        self.changed.push((x0.0, x0.1, self.color));
                     }
                 }
             }
@@ -106,12 +106,15 @@ impl<'g> Connectivity<'g> {
 fn apply_connectivity_for(grid: &mut Grid, path: Option<&mut SolvePath>, color: Cell) -> bool {
     let mut conn = Connectivity::new(grid, color);
     conn.dfs_all();
-    if conn.made_progress
-        && let Some(path) = path
-    {
-        path.push(SolveStep::ApplyConnectivity);
+
+    let changed = conn.changed;
+    let made_progress = changed.len() > 0;
+    if let Some(path) = path {
+        if made_progress {
+            path.push(SolveStep::ApplyConnectivity(changed));
+        }
     }
-    conn.made_progress
+    made_progress
 }
 
 pub fn apply(grid: &mut Grid, mut path: Option<&mut SolvePath>) -> bool {

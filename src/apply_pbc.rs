@@ -60,7 +60,7 @@ pub fn apply(grid: &mut Grid, path: Option<&mut SolvePath>, depth: usize) -> boo
             log::debug!("pbc found contradiction in {}", DumpGrid("?....", &hyp));
             log::debug!("by pbc cell at {x:?} is black",);
             if let Some(path) = path {
-                path.push(SolveStep::ApplyPbc(r, c, Cell::White, hyppath));
+                path.push(SolveStep::ApplyPbc(r, c, Cell::Black, hyppath));
             }
             grid[x] = Cell::Black;
             return true;

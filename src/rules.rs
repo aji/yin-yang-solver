@@ -32,7 +32,7 @@ impl<'g> RuleChecker<'g> {
 
     fn dfs(&mut self, x0: (usize, usize), color: Cell) {
         self.visited[x0] = true;
-        for x1 in self.grid.adj(x0) {
+        for x1 in self.grid.iter_adj(x0) {
             if !self.visited[x1] && self.grid[x1] == color {
                 self.dfs(x1, color);
             }

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 14px;
+    }
+    main {
+      display: grid;
+      grid-template-columns: 1fr 10rem;
+      grid-template-rows: 1fr;
+      position: fixed;
+      left: 0;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      overflow: hidden;
+      padding: 1rem;
+      gap: 1rem;
+    }
+    #puzzle {
+      object-fit: contain;
+      place-self: center;
+      width: 80%;
+      height: 80%;
+    }
+    #puzzle .empty { fill: #888; stroke: none; }
+    #puzzle .black { fill: #000; stroke: none; }
+    #puzzle .white { fill: #fff; stroke: none; }
+    #puzzle .hilite { fill: none; stroke: #8f8; stroke-width: 0.2; }
+    #puzzle .grid { stroke: #ccc; stroke-width: 0.1; stroke-linecap: round; }
+    #path { overflow-y: auto; }
+    ul {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+    }
+    li {
+      margin: 0;
+    }
+    li > ul {
+      margin-left: 1rem;
+    }
+    [data-cur="yes"] {
+      background-color: #8f8;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <svg id="puzzle" viewBox="0 0 4 4" xmlns="http://www.w3.org/2000/svg">
+    </svg>
+    {PATH}
+  </main>
+  <script>
+    function rect(x, y, w, h, cls) {
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      if (cls) rect.setAttribute('class', cls);
+      rect.setAttribute('x', `${x}`);
+      rect.setAttribute('y', `${y}`);
+      rect.setAttribute('width', `${w}`);
+      rect.setAttribute('height', `${h}`);
+      return rect;
+    }
+    function line(x0, y0, x1, y1, cls) {
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      if (cls) line.setAttribute('class', cls);
+      line.setAttribute('x1', `${x0}`);
+      line.setAttribute('y1', `${y0}`);
+      line.setAttribute('x2', `${x1}`);
+      line.setAttribute('y2', `${y1}`);
+      return line;
+    }
+    function renderCell(puz, r, c, is, hilite) {
+      puz.appendChild(rect(c+0.05, r+0.05, 0.9, 0.9, is));
+      if (hilite) puz.appendChild(rect(c+0.05, r+0.05, 0.9, 0.9, 'hilite'));
+    }
+    function renderGridLines(puz, rows, cols) {
+      for (let r=0; r<=rows; r++) puz.appendChild(line(0, r, cols, r, 'grid'));
+      for (let c=0; c<=cols; c++) puz.appendChild(line(c, 0, c, rows, 'grid'));
+    }
+    function renderGrid(grid0, grid1) {
+      const puz = document.getElementById('puzzle');
+      puz.innerHTML = '';
+      let row = 0;
+      let col = 0;
+      for (let i=0; i<grid1.length; i++) {
+        const cell0 = grid0?.charAt(i);
+        const cell1 = grid1?.charAt(i);
+        if (cell1 == '/') { col = 0; row++; continue; }
+        const hilite = cell0 !== undefined && cell1 != cell0;
+        const is = {'.':'empty', 'B':'black', 'W':'white'}[cell1];
+        renderCell(puz, row, col, is, hilite);
+        col++;
+      }
+      let rows = row + 1;
+      let cols = col;
+      renderGridLines(puz, rows, cols);
+      puz.setAttribute('viewBox', `-0.5 -0.5 ${cols+0.5} ${rows+1.5}`);
+    }
+    let current = null;
+    function renderStep(e) {
+      if (!(e instanceof HTMLElement) || !e.hasAttribute('data-puz')) return;
+      let d = e.previousElementSibling ?? null;
+      if (d === null) {
+        for (let cur = e.parentElement; cur != null; cur = cur.parentElement) {
+          let prev = cur.previousElementSibling;
+          if (prev?.hasAttribute('data-puz')) {
+            console.log('found', prev);
+            d = prev; break;
+          }
+        }
+      }
+      if (current !== null) {
+        current.removeAttribute('data-cur');
+      }
+      current = e;
+      current.setAttribute('data-cur', 'yes');
+      renderGrid(d?.getAttribute?.('data-puz'), e.getAttribute('data-puz'));
+    }
+    const path = document.getElementById('path');
+    renderStep(path.firstElementChild);
+    path.addEventListener('click', (e) => {
+      e.stopPropagation();
+      renderStep(e.target);
+    });
+    document.addEventListener('keydown', (e) => {
+      if (current === null || !(current instanceof HTMLElement)) return;
+      const next = current.nextElementSibling;
+      const prev = current.previousElementSibling;
+      let down = current.firstElementChild?.firstElementChild ?? null;
+      let up = current.parentElement?.parentElement ?? null;
+      if (!down?.hasAttribute('data-puz')) down = null;
+      if (!up?.hasAttribute('data-puz')) up = null;
+      if (e.key === 'ArrowDown' && next !== null) renderStep(next);
+      if (e.key === 'ArrowUp' && prev !== null) renderStep(prev);
+      if (e.key === 'ArrowRight' && down !== null) renderStep(down);
+      if (e.key === 'ArrowLeft' && up !== null) renderStep(up);
+    });
+  </script>
+</body>
+</html>

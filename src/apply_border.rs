@@ -1,20 +1,12 @@
 use crate::{
     Cell, Grid,
-    ext::CellExt,
-    iter::IterBorderMut,
+    ext::{ArrayExt, CellExt},
     solve_path::{SolvePath, SolveStep},
 };
 
 pub fn apply(grid: &mut Grid, path: Option<&mut SolvePath>) -> bool {
     let mut made_progress = false;
-    let mut border = {
-        let mut border: Vec<Cell> = Vec::new();
-        let mut it = IterBorderMut::new();
-        while let Some(cell) = it.next(grid) {
-            border.push(*cell);
-        }
-        border
-    };
+    let mut border: Vec<Cell> = grid.iter_border_positions().map(|x| grid[x]).collect();
 
     let border_filled = border
         .iter()
@@ -58,14 +50,15 @@ pub fn apply(grid: &mut Grid, path: Option<&mut SolvePath>) -> bool {
     }
 
     if made_progress {
-        let mut i = 0;
-        let mut it = IterBorderMut::new();
-        while let Some(cell) = it.next(grid) {
-            *cell = border[i];
-            i += 1;
+        let mut changed: Vec<(usize, usize, Cell)> = Vec::new();
+        for (i, x) in grid.iter_border_positions().enumerate() {
+            if grid[x] != border[i] {
+                changed.push((x.0, x.1, border[i]));
+                grid[x] = border[i];
+            }
         }
         if let Some(path) = path {
-            path.push(SolveStep::ApplyBorder);
+            path.push(SolveStep::ApplyBorder(changed));
         }
     }
 

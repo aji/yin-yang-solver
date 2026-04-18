@@ -6,8 +6,8 @@ pub type SolvePath = Vec<SolveStep>;
 pub enum SolveStep {
     ApplySolid2x2(usize, usize, Cell),
     ApplyCheckerboard2x2(usize, usize, Cell),
-    ApplyBorder,
-    ApplyConnectivity,
+    ApplyBorder(Vec<(usize, usize, Cell)>),
+    ApplyConnectivity(Vec<(usize, usize, Cell)>),
     ApplyPbc(usize, usize, Cell, Vec<SolveStep>),
 }
 
@@ -33,8 +33,8 @@ fn fmt_step<W: io::Write>(f: &mut W, indent: usize, step: &SolveStep) -> io::Res
         SolveStep::ApplyCheckerboard2x2(r, c, _) => {
             write!(f, "2x2 forces {r},{c} to {color} (checkerboard)\n")
         }
-        SolveStep::ApplyBorder => write!(f, "apply border logic\n"),
-        SolveStep::ApplyConnectivity => write!(f, "apply connectivity logic\n"),
+        SolveStep::ApplyBorder(_) => write!(f, "apply border logic\n"),
+        SolveStep::ApplyConnectivity(_) => write!(f, "apply connectivity logic\n"),
         SolveStep::ApplyPbc(r, c, _, steps) => {
             write!(f, "pbc at {r},{c} forces {color}; if {color_inv}:\n")?;
             fmt_path_inner(f, indent + 1, steps)
