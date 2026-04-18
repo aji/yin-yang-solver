@@ -12,7 +12,7 @@ pub fn apply(grid: &mut Grid, mut path: Option<&mut SolvePath>) -> bool {
 
     let path = &mut path;
     let mut report = |r, c, color, solid| {
-        if next[(r, c)] == color {
+        if !next[(r, c)].empty() {
             return;
         }
         next[(r, c)] = color;
