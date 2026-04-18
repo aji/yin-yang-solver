@@ -127,13 +127,13 @@ fn path_to_html_list_items(grid: GridView, path: &[SolveStep]) -> String {
         lis.push(step_to_html_list_item(&mut grid, step));
     }
 
-    lis.join("")
+    lis.join("\n")
 }
 
 fn path_to_html_list(grid: GridView, final_grid: GridView, path: &[SolveStep]) -> String {
     let lis = path_to_html_list_items(grid, path);
     return format!(
-        r#"<ul id="path">{}{lis}{}</ul>"#,
+        "<ul id=\"path\">\n{}\n{lis}\n{}\n</ul>",
         GridListItem(grid, "start".into(), Vec::new()),
         GridListItem(final_grid, "done".into(), Vec::new())
     );
@@ -160,11 +160,11 @@ impl<'g> fmt::Display for GridListItem<'g> {
         write!(f, "\">")?;
         write!(f, "{}", self.1)?;
         if self.2.len() > 0 {
-            write!(f, "<ul>")?;
+            write!(f, "\n<ul>\n")?;
             for item in self.2.iter() {
-                write!(f, "{item}")?;
+                write!(f, "{item}\n")?;
             }
-            write!(f, "</ul>")?;
+            write!(f, "</ul>\n")?;
         }
         write!(f, "</li>")?;
         Ok(())
