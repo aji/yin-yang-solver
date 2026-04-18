@@ -18,7 +18,7 @@ fn apply_solve(grid: &mut Grid, mut path: Option<&mut SolvePath>) -> bool {
         log::debug!("applied connectivity logic");
         return true;
     }
-    if apply_pbc::apply(grid, path.as_deref_mut(), 5) {
+    if apply_pbc::apply(grid, path.as_deref_mut(), 3) {
         return true;
     }
     false
